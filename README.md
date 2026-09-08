@@ -80,7 +80,7 @@ sudo bash -c "apt-get update -y && apt-get install -y git python3-pip python3-se
 ### Install script
 
 Clone the repository and run the included installer (equivalent to the
-one-liner above, and handles PEP 668 `/` externally-managed` Python environments
+one-liner above, and handles PEP 668 externally-managed Python environments
 on Debian/Ubuntu automatically):
 
 ```bash
