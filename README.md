@@ -62,15 +62,53 @@ Following are the requirements for getting the most out of Wifiphisher:
 
 ## Installation
 
-To install the latest development version type the following commands:
+This fork fixes installation on modern systems (Python 3.12+, where upstream's
+`distutils`/`dependency_links` based installer breaks) and ships with a
+one-shot installer that installs every required package on a fresh
+Debian/Kali system.
+
+### One-line install & run (fresh Kali Linux)
+
+Runs entirely as one command — installs all apt and Python dependencies
+(including `roguehostapd` and `pyric`, which are not on PyPI), then launches
+wifiphisher:
 
 ```bash
-git clone https://github.com/wifiphisher/wifiphisher.git # Download the latest revision
-cd wifiphisher # Switch to tool's directory
-sudo python setup.py install # Install any dependencies
+sudo bash -c "apt-get update -y && apt-get install -y git python3-pip python3-setuptools python3-dev build-essential libnl-3-dev libnl-genl-3-dev libssl-dev dnsmasq hostapd aircrack-ng iw rfkill && python3 -m pip install --upgrade pip setuptools wheel && python3 -m pip install 'git+https://github.com/wifiphisher/roguehostapd.git' 'git+https://github.com/sophron/pyric.git' 'scapy==2.4.5' tornado pbkdf2 six && git clone https://github.com/LightHostingFree/wifiphisher.git /opt/wifiphisher && cd /opt/wifiphisher && python3 -m pip install . && wifiphisher"
 ```
 
-Alternatively, you can download the latest stable version from the <a href="https://github.com/wifiphisher/wifiphisher/releases">Releases page</a>.
+### Install script
+
+Clone the repository and run the included installer (equivalent to the
+one-liner above, and handles PEP 668 `/` externally-managed` Python environments
+on Debian/Ubuntu automatically):
+
+```bash
+git clone https://github.com/LightHostingFree/wifiphisher.git
+cd wifiphisher
+sudo ./install.sh
+sudo wifiphisher
+```
+
+### Manual install
+
+The dependencies `roguehostapd` and `pyric` are not published on PyPI, so they
+must be installed from their GitHub repositories (this is why upstream's
+`pip install .` fails — it relied on the removed `dependency_links`):
+
+```bash
+sudo apt-get update
+sudo apt-get install -y build-essential libnl-3-dev libnl-genl-3-dev libssl-dev dnsmasq hostapd aircrack-ng iw rfkill
+python3 -m pip install --upgrade pip setuptools wheel
+python3 -m pip install "git+https://github.com/wifiphisher/roguehostapd.git"
+python3 -m pip install "git+https://github.com/sophron/pyric.git"
+python3 -m pip install "scapy==2.4.5" tornado pbkdf2 six
+git clone https://github.com/LightHostingFree/wifiphisher.git
+cd wifiphisher
+sudo python3 -m pip install .
+sudo wifiphisher
+```
+
 
 ## Usage
 

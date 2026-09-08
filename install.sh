@@ -14,6 +14,18 @@ set -euo pipefail
 
 echo "[*] Wifiphisher installer starting (apt + pip)..."
 
+# pip on modern Debian/Ubuntu refuses to write into an externally-managed
+# Python environment (PEP 668). Kali is unaffected, so add the override
+# automatically only on Debian/Ubuntu based systems.
+PIP_FLAGS=()
+if [[ -f /etc/os-release ]] && grep -qiE "debian|ubuntu" /etc/os-release; then
+  PIP_FLAGS+=(--break-system-packages)
+fi
+
+pip_install() {
+  python3 -m pip install "${PIP_FLAGS[@]}" "$@"
+}
+
 # ---------------------------------------------------------------------------
 # 1) System (apt) dependencies required by wifiphisher / roguehostapd
 # ---------------------------------------------------------------------------
@@ -44,7 +56,7 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y "${APT_PACKAGES[@]}"
 #    roguehostapd's legacy build keep working on Python 3.12+)
 # ---------------------------------------------------------------------------
 echo "[*] Upgrading pip/setuptools/wheel..."
-python3 -m pip install --upgrade pip setuptools wheel
+pip_install --upgrade pip setuptools wheel
 
 # ---------------------------------------------------------------------------
 # 3) Python dependencies
@@ -54,18 +66,18 @@ python3 -m pip install --upgrade pip setuptools wheel
 #    - scapy is pinned to 2.4.5 which matches the wifiphisher source.
 # ---------------------------------------------------------------------------
 echo "[*] Installing roguehostapd (from GitHub, compiled C extension)..."
-python3 -m pip install "git+https://github.com/wifiphisher/roguehostapd.git"
+pip_install "git+https://github.com/wifiphisher/roguehostapd.git"
 
 echo "[*] Installing pyric (from GitHub)..."
-python3 -m pip install "git+https://github.com/sophron/pyric.git"
+pip_install "git+https://github.com/sophron/pyric.git"
 
 echo "[*] Installing Python dependencies (scapy, tornado, pbkdf2, six)..."
-python3 -m pip install "scapy==2.4.5" tornado pbkdf2 six
+pip_install "scapy==2.4.5" tornado pbkdf2 six
 
 # ---------------------------------------------------------------------------
 # 4) Install wifiphisher itself
 # ---------------------------------------------------------------------------
 echo "[*] Installing wifiphisher..."
-python3 -m pip install .
+pip_install .
 
 echo "[+] Done. Run it with: sudo wifiphisher"
