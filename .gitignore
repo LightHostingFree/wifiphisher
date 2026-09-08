@@ -5,6 +5,10 @@ wifiphisher/data/locs/*
 __pycache__/
 *.py[cod]
 
+# Virtual environments
+.venv/
+venv/
+
 # C extensions
 *.so
 

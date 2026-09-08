@@ -7,6 +7,7 @@
 # It was ported to python3 and adapted to be used within WifiPhisher.
 
 from os import geteuid, devnull
+import os
 import logging
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
@@ -15,6 +16,8 @@ import binascii
 import struct
 import signal
 import base64
+import copy
+import re
 from urllib.parse import unquote
 import platform
 from subprocess import Popen, PIPE, check_output
@@ -242,7 +245,7 @@ class Sniffer (object):
                     Name = Data[154:154+NameLen]
                     DomainLen = struct.unpack('<b',Data[154+NameLen+3:154+NameLen+4])[0]
                     Domain = Data[154+NameLen+4:154+NameLen+4+DomainLen]
-                    BuildHash = "$krb5pa$23$"+Name+"$"+Domain+"$dummy$"+SwitchHash.encode('hex')
+                    BuildHash = "$krb5pa$23$"+Name+"$"+Domain+"$dummy$"+ binascii.hexlify(SwitchHash).decode()
                     return 'MS Kerberos: %s' % BuildHash
 
             if Data[44:48] == "\xa2\x36\x04\x34" or Data[44:48] == "\xa2\x35\x04\x33":
@@ -253,7 +256,7 @@ class Sniffer (object):
                 Name = Data[HashLen+97:HashLen+97+NameLen]
                 DomainLen = struct.unpack('<b',Data[HashLen+97+NameLen+3:HashLen+97+NameLen+4])[0]
                 Domain = Data[HashLen+97+NameLen+4:HashLen+97+NameLen+4+DomainLen]
-                BuildHash = "$krb5pa$23$"+Name+"$"+Domain+"$dummy$"+SwitchHash.encode('hex')
+                BuildHash = "$krb5pa$23$"+Name+"$"+Domain+"$dummy$"+ binascii.hexlify(SwitchHash).decode()
                 return 'MS Kerberos: %s' % BuildHash
 
             else:
@@ -263,7 +266,7 @@ class Sniffer (object):
                 Name = Data[149:149+NameLen]
                 DomainLen = struct.unpack('<b',Data[149+NameLen+3:149+NameLen+4])[0]
                 Domain = Data[149+NameLen+4:149+NameLen+4+DomainLen]
-                BuildHash = "$krb5pa$23$"+Name+"$"+Domain+"$dummy$"+SwitchHash.encode('hex')
+                BuildHash = "$krb5pa$23$"+Name+"$"+Domain+"$dummy$"+ binascii.hexlify(SwitchHash).decode()
                 return 'MS Kerberos: %s' % BuildHash
 
     def ParseMSKerbv5UDP(self, Data):
@@ -291,7 +294,7 @@ class Sniffer (object):
                         Name = Data[145:145+NameLen]
                         DomainLen = struct.unpack('<b',Data[145+NameLen+3:145+NameLen+4])[0]
                         Domain = Data[145+NameLen+4:145+NameLen+4+DomainLen]
-                        BuildHash = "$krb5pa$23$"+Name+"$"+Domain+"$dummy$"+SwitchHash.encode('hex')
+                        BuildHash = "$krb5pa$23$"+Name+"$"+Domain+"$dummy$"+ binascii.hexlify(SwitchHash).decode()
                         return 'MS Kerberos: %s' % BuildHash
 
                     if HashLen == 53:
@@ -301,7 +304,7 @@ class Sniffer (object):
                         Name = Data[144:144+NameLen]
                         DomainLen = struct.unpack('<b',Data[144+NameLen+3:144+NameLen+4])[0]
                         Domain = Data[144+NameLen+4:144+NameLen+4+DomainLen]
-                        BuildHash = "$krb5pa$23$"+Name+"$"+Domain+"$dummy$"+SwitchHash.encode('hex')
+                        BuildHash = "$krb5pa$23$"+Name+"$"+Domain+"$dummy$"+ binascii.hexlify(SwitchHash).decode()
                         return 'MS Kerberos: %s' % BuildHash
 
                 else:
@@ -312,7 +315,7 @@ class Sniffer (object):
                     Name = Data[HashLen+98:HashLen+98+NameLen]
                     DomainLen = struct.unpack('<b',Data[HashLen+98+NameLen+3:HashLen+98+NameLen+4])[0]
                     Domain = Data[HashLen+98+NameLen+4:HashLen+98+NameLen+4+DomainLen]
-                    BuildHash = "$krb5pa$23$"+Name+"$"+Domain+"$dummy$"+SwitchHash.encode('hex')
+                    BuildHash = "$krb5pa$23$"+Name+"$"+Domain+"$dummy$"+ binascii.hexlify(SwitchHash).decode()
                     return 'MS Kerberos: %s' % BuildHash
             except struct.error:
                 return
@@ -672,7 +675,7 @@ class Sniffer (object):
             if b64_auth_re != None:
                 basic_auth_b64 = b64_auth_re.group(1)
                 try:
-                    basic_auth_creds = base64.decodestring(basic_auth_b64)
+                    basic_auth_creds = base64.decodebytes(basic_auth_b64)
                 except Exception:
                     return
                 msg = 'Basic Authentication: %s' % basic_auth_creds
@@ -808,7 +811,7 @@ class Sniffer (object):
                 msg2 = header_val2[1]
             except IndexError:
                 return
-            msg2 = base64.decodestring(msg2)
+            msg2 = base64.decodebytes(msg2)
             self.parse_ntlm_chal(msg2, ack)
 
     def parse_ntlm_chal(self, msg2, ack):
@@ -823,7 +826,7 @@ class Sniffer (object):
             assert(msg_type==2)
         except Exception:
             return
-        ServerChallenge = msg2[24:32].encode('hex')
+        ServerChallenge = binascii.hexlify(msg2[24:32]).decode()
 
         # Keep the dict of ack:challenge to less than 50 chals
         if len(self.challenge_acks) > 50:
@@ -843,7 +846,7 @@ class Sniffer (object):
         # The header value can either start with NTLM or Negotiate
         if header_val3[0] == 'NTLM' or header_val3[0] == 'Negotiate':
             try:
-                msg3 = base64.decodestring(header_val3[1])
+                msg3 = base64.decodebytes(header_val3[1])
             except binascii.Error:
                 return
             return self.parse_ntlm_resp(msg3, seq)
