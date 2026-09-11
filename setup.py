@@ -33,7 +33,7 @@ class CleanCommand(Command):
 # runtime dependencies available on PyPI.
 # roguehostapd and pyric are not published on PyPI and are installed
 # separately from their GitHub repositories (see README / install script).
-INSTALL_REQUIRES = ["pbkdf2", "six", "scapy==2.4.5", "tornado>=5.0.0"]
+INSTALL_REQUIRES = ["pbkdf2", "six", "scapy>=2.5.0", "tornado>=5.0.0"]
 
 # setup settings
 NAME = "wifiphisher"

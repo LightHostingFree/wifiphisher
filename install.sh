@@ -63,21 +63,52 @@ pip_install --upgrade pip setuptools wheel
 #    - roguehostapd & pyric live only on GitHub (not on PyPI), so they are
 #      installed from source. roguehostapd compiles a C extension and needs
 #      the libnl-3/openssl dev packages installed in step (1).
-#    - scapy is pinned to 2.4.5 which matches the wifiphisher source.
+#    - scapy needs to be >= 2.5.0 because 2.4.5 vendors a six without
+#      importlib find_spec support and breaks on Python 3.12+.
 # ---------------------------------------------------------------------------
 echo "[*] Installing roguehostapd (from GitHub, compiled C extension)..."
-pip_install "git+https://github.com/wifiphisher/roguehostapd.git"
+# Upstream roguehostapd imports configparser.SafeConfigParser, an alias that
+# was removed in Python 3.14 (and is identical to ConfigParser), so patch the
+# source before installing to keep the build working on Python 3.14.
+ROGUEHOSTAPD_SRC="$(mktemp -d)"
+git clone --depth 1 https://github.com/wifiphisher/roguehostapd.git "${ROGUEHOSTAPD_SRC}"
+python3 - "${ROGUEHOSTAPD_SRC}" <<'PYEOF'
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1]) / "roguehostapd" / "config" / "hostapdconfig.py"
+text = path.read_text()
+text = text.replace(
+    "try:\n"
+    "    from configparser import SafeConfigParser  # Python 3\n"
+    "except ImportError:\n"
+    "    from ConfigParser import SafeConfigParser  # Python 2",
+    "from configparser import ConfigParser",
+)
+text = text.replace("config = SafeConfigParser()", "config = ConfigParser()")
+path.write_text(text)
+PYEOF
+pip_install "${ROGUEHOSTAPD_SRC}"
 
 echo "[*] Installing pyric (from GitHub)..."
 pip_install "git+https://github.com/sophron/pyric.git"
 
 echo "[*] Installing Python dependencies (scapy, tornado, pbkdf2, six)..."
-pip_install "scapy==2.4.5" tornado pbkdf2 six
+pip_install "scapy>=2.5.0" tornado pbkdf2 six
 
 # ---------------------------------------------------------------------------
 # 4) Install wifiphisher itself
 # ---------------------------------------------------------------------------
 echo "[*] Installing wifiphisher..."
-pip_install .
+# The installer works both when run from inside a repository checkout and
+# when piped straight from the web (e.g. `curl ... | sudo bash`), in which
+# case there is no setup.py in the current directory.
+if [ -f ./setup.py ]; then
+  pip_install .
+else
+  git clone --depth 1 https://github.com/LightHostingFree/wifiphisher.git /opt/wifiphisher
+  cd /opt/wifiphisher
+  pip_install .
+fi
 
 echo "[+] Done. Run it with: sudo wifiphisher"

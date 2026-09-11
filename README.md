@@ -62,10 +62,10 @@ Following are the requirements for getting the most out of Wifiphisher:
 
 ## Installation
 
-This fork fixes installation on modern systems (Python 3.12+, where upstream's
-`distutils`/`dependency_links` based installer breaks) and ships with a
-one-shot installer that installs every required package on a fresh
-Debian/Kali system.
+This fork fixes installation on modern systems (Python 3.12+ through 3.14,
+where upstream's `distutils`/`dependency_links` based installer breaks) and
+ships with a one-shot installer that installs every required package on a
+fresh Debian/Kali system.
 
 ### One-line install & run (fresh Kali Linux)
 
@@ -74,7 +74,7 @@ Runs entirely as one command — installs all apt and Python dependencies
 wifiphisher:
 
 ```bash
-sudo bash -c "apt-get update -y && apt-get install -y git python3-pip python3-setuptools python3-dev build-essential libnl-3-dev libnl-genl-3-dev libssl-dev dnsmasq hostapd aircrack-ng iw rfkill && python3 -m pip install --upgrade pip setuptools wheel && python3 -m pip install 'git+https://github.com/wifiphisher/roguehostapd.git' 'git+https://github.com/sophron/pyric.git' 'scapy==2.4.5' tornado pbkdf2 six && git clone https://github.com/LightHostingFree/wifiphisher.git /opt/wifiphisher && cd /opt/wifiphisher && python3 -m pip install . && wifiphisher"
+curl -fsSL https://raw.githubusercontent.com/LightHostingFree/wifiphisher/master/install.sh | sudo bash && sudo wifiphisher
 ```
 
 ### Install script
@@ -102,12 +102,16 @@ sudo apt-get install -y build-essential libnl-3-dev libnl-genl-3-dev libssl-dev 
 python3 -m pip install --upgrade pip setuptools wheel
 python3 -m pip install "git+https://github.com/wifiphisher/roguehostapd.git"
 python3 -m pip install "git+https://github.com/sophron/pyric.git"
-python3 -m pip install "scapy==2.4.5" tornado pbkdf2 six
+python3 -m pip install "scapy>=2.5.0" tornado pbkdf2 six
 git clone https://github.com/LightHostingFree/wifiphisher.git
 cd wifiphisher
 sudo python3 -m pip install .
 sudo wifiphisher
 ```
+
+Note: `roguehostapd` upstream still imports `configparser.SafeConfigParser`,
+which was removed in Python 3.14. On Python 3.14 prefer the one-line/install
+script above — they patch that import automatically before installing.
 
 
 ## Usage

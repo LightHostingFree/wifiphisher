@@ -723,21 +723,28 @@ class NetworkManager(object):
         """
 
         # populate our dictionary with all the available interfaces on the system
-        for interface in pyw.interfaces():
+        try:
+            available_interfaces = pyw.interfaces()
+        except (pyric.error, OSError):
+            # No usable netlink/wireless subsystem is present (e.g. a
+            # container without nl80211). Degrade to an empty list so the
+            # caller reports it gracefully instead of raising.
+            available_interfaces = []
+        for interface in available_interfaces:
             try:
                 card = pyw.getcard(interface)
                 mac_address = pyw.macget(card)
                 adapter = NetworkAdapter(interface, card, mac_address)
                 self._name_to_object[interface] = adapter
                 interface_property_detector(adapter)
-            # ignore devices that are not supported(93) and no such device(19)
-            except pyric.error as error:
-                if error.args[0] in (93, 19):
-                    pass
-                elif interface == args.internetinterface:
+            except (pyric.error, OSError) as error:
+                # a failed internet interface is an error, any other device
+                # that cannot be enumerated (unsupported(93), no such
+                # device(19), missing nl80211 family, ...) is skipped so the
+                # remaining usable interfaces can still be used.
+                if interface == args.internetinterface:
                     return False
-                else:
-                    raise error
+                logger.info("Skipping interface {}: {}".format(interface, error))
 
     def on_exit(self):
         """

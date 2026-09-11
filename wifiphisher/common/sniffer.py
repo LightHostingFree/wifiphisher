@@ -30,7 +30,13 @@ from io import StringIO
 class Sniffer (object):
     # Setup the class variables
     conf.verb=0
-    logging.basicConfig(filename='/tmp/wifiphisher-credentials.txt',level=logging.INFO)
+    # Create the credentials log file eagerly once, but never let a
+    # permissions problem on /tmp take the whole tool down silently.
+    try:
+        logging.basicConfig(filename='/tmp/wifiphisher-credentials.txt',
+                            level=logging.INFO)
+    except OSError:
+        pass
 
     def __init__(self):
         """
@@ -58,12 +64,12 @@ class Sniffer (object):
         self.irc_user_re = r'NICK (.+?)((\r)?\n|\s)'
         self.irc_pw_re = r'NS IDENTIFY (.+)'
         self.irc_pw_re2 = 'nickserv :identify (.+)'
-        self.mail_auth_re = '(\d+ )?(auth|authenticate) (login|plain)'
-        self.mail_auth_re1 =  '(\d+ )?login '
+        self.mail_auth_re = r'(\d+ )?(auth|authenticate) (login|plain)'
+        self.mail_auth_re1 =  r'(\d+ )?login '
         self.NTLMSSP2_re = 'NTLMSSP\x00\x02\x00\x00\x00.+'
         self.NTLMSSP3_re = 'NTLMSSP\x00\x03\x00\x00\x00.+'
         # Prone to false+ but prefer that to false-
-        self.http_search_re = '((search|query|&q|\?q|search\?p|searchterm|keywords|keyword|command|terms|keys|question|kwd|searchPhrase)=([^&][^&]*))'
+        self.http_search_re = r'((search|query|&q|\?q|search\?p|searchterm|keywords|keyword|command|terms|keys|question|kwd|searchPhrase)=([^&][^&]*))'
 
         #Console colors
         self.W = '\033[0m'  # white (normal)
@@ -938,8 +944,11 @@ class Sniffer (object):
             print_str = ansi_escape.sub('', print_str)
 
             # Log the creds
-            with open('/tmp/wifiphisher-credentials.txt', 'a') as log:
-                log.write(print_str+'\n')
+            try:
+                with open('/tmp/wifiphisher-credentials.txt', 'a') as log:
+                    log.write(print_str+'\n')
+            except OSError:
+                pass
             
         else:
             print_str = '[%s] %s' % (src_ip_port.split(':')[0], msg)
