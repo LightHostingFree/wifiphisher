@@ -116,4 +116,9 @@ else
   pip_install .
 fi
 
+# Kali/Debian sudoers set secure_path=/usr/sbin:/usr/bin:/sbin:/bin (no
+# /usr/local/bin), so `sudo wifiphisher` would fail to find the script that
+# pip installs there. Put it in /usr/bin so it works for every user.
+ln -sf /usr/local/bin/wifiphisher /usr/bin/wifiphisher
+
 echo "[+] Done. Run it with: sudo wifiphisher"
