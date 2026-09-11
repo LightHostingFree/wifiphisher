@@ -46,6 +46,7 @@ APT_PACKAGES=(
   hostapd
   aircrack-ng
   iw
+  iptables
   rfkill
   net-tools
 )
