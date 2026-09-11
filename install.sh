@@ -23,7 +23,11 @@ if [[ -f /etc/os-release ]] && grep -qiE "debian|ubuntu" /etc/os-release; then
 fi
 
 pip_install() {
-  python3 -m pip install "${PIP_FLAGS[@]}" "$@"
+  # --ignore-installed: on Kali/Debian the packages (wheel, six, tornado,
+  # scapy, ...) ship as apt packages without RECORD metadata, so pip's
+  # default upgrade path fails trying to uninstall them. Overwriting them
+  # directly is what we want here.
+  python3 -m pip install --upgrade --ignore-installed "${PIP_FLAGS[@]}" "$@"
 }
 
 # ---------------------------------------------------------------------------
